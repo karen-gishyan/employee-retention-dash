@@ -1,3 +1,0 @@
-https://www.kaggle.com/bandiang2/prediction-of-customer-churn-at-a-bank
-https://www.kaggle.com/jsaguiar/churn-prediction-tutorial-with-sklearn
-https://www.kaggle.com/bandiatindra/telecom-churn-prediction
