@@ -18,8 +18,21 @@
 	font-weight: bold;
 	text-align: center;
 	margin: 0 auto;
+  color:#008B8B;
 }
 
-div.c {
-  text-align: right;
+.subheader-title {
+
+ 
+  font-size: 24px;
+  font-weight: bold;
+  text-align: center;
+  color: #008B8B;
+
+}
+
+.column-colors {
+  font-size: 20px;
+  color: #8A2BE2;
+
 }
