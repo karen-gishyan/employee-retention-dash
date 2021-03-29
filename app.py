@@ -1,7 +1,12 @@
+### Make your functions (for visualizations, models) then decorate with inputs and outputs.
+
+
+
 ### Construct independent elements.
 ### Organize them into tabs, then tabs into layouts. or strictly into layouts.
 ### This approach allows to easiliy take out and modify graphs, and manually inserting
 ### each plot into the layout makes the complicated.
+
 
 import pandas as pd 
 import numpy as np 
@@ -79,7 +84,6 @@ for p in ax.patches:
 ### Three main steps.
 ### Make the chart, with a callback, embed in an html form.
 
-
 app=dash.Dash(__name__,external_stylesheets=[dbc.themes.BOOTSTRAP])
 
 #each div has its own dropdown and graph. Later, a more effective method may be found.
@@ -122,61 +126,88 @@ controls=dbc.Card([
 		dbc.Input(id="balance-input",type="number", min=0, max=10000000, step=1,
 			valid=True,value=77000,  placeholder="Enter a creditScore")]),
 
-	# dbc. FormGroup([
-	# 	dbc.Label("Number of Products: Valid range (1-5).",className="column-colors"),
-	# 	dbc.Input(id="num-product-input",type="number", min=0, max=10, step=1,
-	# 		valid=True,value=2)]),
-
 
 	dbc. FormGroup([
 		dbc.Label("CreditCard Availability:",className="column-colors"),
-		dbc.Checklist(id='credcard-input',
+		dbc.Checklist(id='redcard-input',
 			options=[{"label":"No","value":1},{"label":"Yes","value":2}],
 			value=[2],switch=True)]),
-
-	# dbc. FormGroup([
-	# 	dbc.Label("Active Membership:",className="column-colors"),
-	# 	dbc.RadioItems(options=[{"label":"No","value":1}, {"label":"Yes","value":2}],
-	# 		value=1, id="membership-input",inline=True)]),
 
 	dbc.FormGroup([
 		dbc.Label("Salary: Valid range (1,000-10,000,000).",className="column-colors"),
 		dbc.Input(id="salary-input",type="number", min=1000, max=10000000, step=1,
 			valid=True,placeholder="Enter a creditScore",value=100000)]),
 
+
 	dbc.Button("Make a prediction", color="success", className="mr-1",id="predict-button"),
 		dbc.Popover(popover_content,id='click',target='predict-button',trigger='click'),
 		dbc. FormGroup([
-					
+	
+
 	dbc.Label("Prediction Result",className="column-colors",style={'text-align': 'center'}),
 	dbc.Input(id="predicted-status")])
-
-
 
 	])
 	
 
-hist=html.Div([
-
-	html.P("Mean:"),
-	dcc.Slider(id="mean",min=-3,max=3,value=0,marks={-3:'-3','3':'3'}),
-	html.P("Standard Deviation:"),
-	dcc.Slider(id="std",min=1,max=5,value=1,marks={1:'1',5:'5'}),
-	dcc.Graph(id="histogram")]	
-	,className="card-hist")
-
-pie=html.Div([
-
-	html.P("Names:"),
-	dcc.Dropdown(id="names",
-	options=[{'label':x,'value':x} for x in data.columns],
-	value="geography"),
-	dcc.Graph(id="pie-chart")], className='card-pie')
-
-
 table=html.Div([
 	dbc.Table.from_dataframe(data.iloc[:5,:],striped=True,bordered=True,hover=True)
 	],className="subheader-title")
+
+
+
+dropdown_items=[dbc.DropdownMenuItem(col) for col in numerical_cols]
+
+hist=html.Div([
+
+	# html.P("Mean:"),
+	# dcc.Slider(id="mean",min=-3,max=3,value=0,marks={-3:'-3','3':'3'}),
+	# html.P("Standard Deviation:"),
+	# dcc.Slider(id="std",min=1,max=5,value=1,marks={1:'1',5:'5'}),
+	dbc.Label("Variable:",className="column-colors"),
+	dcc.Dropdown(id="hist-dropdown-items",
+	options=[{"label":value,"value":value} for value in numerical_cols],
+	value="age"),
+	html.Hr(),
+
+	#dbc.DropdownMenu(dropdown_items,id="hist-dropdown-items",label="Histogram Columns", color="primary"),
+	dcc.Graph(id="histogram")],className="card-hist")
+
+pie_1=dbc.FormGroup([
+	
+	dbc.Label("Names:",className="column-colors"),
+	dcc.Dropdown(id="pie-chart-names",options=[{'label':x,'value':x} for x in categorial_cols],value="geography")])
+
+pie_2=dbc.FormGroup([
+
+	dbc.Label("Values:",className="column-colors"),
+	dcc.Dropdown(id="pie-chart-values",options=[{'label':x,'value':x} for x in numerical_cols],value="age")])
+
+pie_graph=dcc.Graph(id='pie-chart',className="card-pie")
+
+
+pie=dbc.Col([pie_1,pie_2,pie_graph])
+	
+	
+#numeric and categorical variables cannot be on the same axis at the same time.
+#s
+bar_chart=dbc.Card([
+	dbc.Form([
+
+	dbc.FormGroup([
+	dbc.Label("x-axis:",className="column-colors"),
+	
+	dbc.Checklist(id="bar-chart-x-axis",options=[{'value':col,'label':col}
+		for col in ['geography','gender','isactivemember']],value=['gender'],inline=True)]),
+	
+	dbc.FormGroup([
+	
+	dbc.Label("y-axis:",className="column-colors"),
+	dbc.RadioItems(id="bar-chart-y-axis",options=[{'value':col,'label':col}
+	for col in ['age','creditscore','estimatedsalary','exited']],value='age',inline=True)])]),
+	html.Hr(),
+	
+	dcc.Graph(id="box-plot",className="card-box")])
 
 
 tab1_content = dbc.Card(
@@ -185,9 +216,14 @@ tab1_content = dbc.Card(
 		html.P("Employee Data",className="subheader-title"),
 		table, 
 		html.P("Statistical Charts",className="subheader-title"),
-		dbc.Row([dbc.Col(hist),dbc.Col(pie)])]),  className="mt-3")
+		dbc.Row([dbc.Col(hist),pie]),
+		html.Hr(),
+
+	dbc.Row([
+	dbc.Col(bar_chart)])]),  className="mt-3") #Card wrapped in a Col, the other way round is also
 
 
+		
 tab2_content = dbc.Card(
 	dbc.CardBody(
 		[
@@ -224,7 +260,7 @@ app.layout=dbc.Container([
 	State("age-input","value"),	
 	State("tenure-input","value"),
 	State("balance-input","value"),
-	State("credcard-input","value"),
+	#State("credcard-input","value"),
 	State("salary-input","value"),
 	State("geography-input","value"),
 	State("gender-input","value")	
@@ -232,7 +268,7 @@ app.layout=dbc.Container([
 
 ### need to match the input order.
 def ridge_classification(predict_button,cred_score,age,tenure,
-	balance,credcard,salary, geography, gender):
+	balance,salary, geography, gender):
 
 	np.set_printoptions(suppress=True)
 
@@ -310,22 +346,39 @@ def decision_tree_classification():
 
 @app.callback(
 	Output('histogram','figure'),
-	Input("mean","value"),Input("std","value"))
+	Input('hist-dropdown-items','value')
+)
 
-def make_histogram(mean,std):
+def histogram(colname):
 
-	data=np.random.normal(mean,std,size=800)
-	fig=px.histogram(data,nbins=10)
+	fig=go.Figure()
+	fig.add_trace(go.Histogram(x=churn[colname],histnorm='percent',name='Churning Customers',
+		opacity=0.85))
+	fig.add_trace(go.Histogram(x=remain[colname],histnorm='percent',name='Remaining Customers',
+		opacity=0.85))
+	#https://plotly.com/python/reference/layout/
+	fig.update_layout(title=dict(text=f"{colname.upper()} distribution according to customers",font_family="Balto"),
+		xaxis=dict(title=colname,ticklen=10,gridwidth=3),yaxis=dict(title="percent",ticklen=10,gridwidth=3))
+
 	return fig
-
 
 @app.callback(
 	Output('pie-chart','figure'),
-	Input("names","value"))
+	[Input("pie-chart-values","value"),Input("pie-chart-names","value")])
 
-def make_pie_chart(names):
-	fig=px.pie(data,values=data.age,names=names)
+def make_pie_chart(values,names):
+	fig=px.pie(data,values=values,names=names)
 	return fig 
+
+@app.callback(Output('box-plot','figure'),
+	[Input("bar-chart-x-axis",'value'),
+	Input("bar-chart-y-axis",'value')])
+
+
+def box_plot(x,y,dataset=data):
+	fig=px.box(dataset,x=x,y=y)
+
+	return fig  
 
 
 if __name__ == "__main__":
