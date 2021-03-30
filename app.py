@@ -7,7 +7,6 @@
 ### This approach allows to easiliy take out and modify graphs, and manually inserting
 ### each plot into the layout makes the complicated.
 
-
 import pandas as pd 
 import numpy as np 
 import matplotlib.pyplot as plt 
@@ -33,6 +32,11 @@ import pydotplus
 import graphviz
 from IPython.display import Image
 from io import StringIO
+from sklearn.svm import SVR
+from sklearn.tree import DecisionTreeRegressor
+from sklearn.linear_model import LinearRegression
+from sklearn.neighbors import KNeighborsRegressor
+
 
 warnings.filterwarnings("ignore")
 
@@ -60,6 +64,8 @@ categorical_cols=data.nunique()[data.nunique() < 6].keys().tolist() #keys() sele
 categorial_cols=[col for col in categorical_cols if col not in target_col]
 numerical_cols=[col for col in data.columns if col not in categorical_cols+target_col]
 
+
+
 #Statistical Properties.
 data[data.columns[:10]].describe()
 
@@ -83,6 +89,11 @@ for p in ax.patches:
 
 ### Three main steps.
 ### Make the chart, with a callback, embed in an html form.
+
+svm_regression_X=data[['creditscore', 'age', 'balance']]
+svm_regression_y=data['estimatedsalary']
+
+
 
 app=dash.Dash(__name__,external_stylesheets=[dbc.themes.BOOTSTRAP])
 
@@ -160,10 +171,6 @@ dropdown_items=[dbc.DropdownMenuItem(col) for col in numerical_cols]
 
 hist=html.Div([
 
-	# html.P("Mean:"),
-	# dcc.Slider(id="mean",min=-3,max=3,value=0,marks={-3:'-3','3':'3'}),
-	# html.P("Standard Deviation:"),
-	# dcc.Slider(id="std",min=1,max=5,value=1,marks={1:'1',5:'5'}),
 	dbc.Label("Variable:",className="column-colors"),
 	dcc.Dropdown(id="hist-dropdown-items",
 	options=[{"label":value,"value":value} for value in numerical_cols],
@@ -197,8 +204,8 @@ bar_chart=dbc.Card([
 	dbc.FormGroup([
 	dbc.Label("x-axis:",className="column-colors"),
 	
-	dbc.Checklist(id="bar-chart-x-axis",options=[{'value':col,'label':col}
-		for col in ['geography','gender','isactivemember']],value=['gender'],inline=True)]),
+	dbc.RadioItems(id="bar-chart-x-axis",options=[{'value':col,'label':col}
+		for col in ['geography','gender','isactivemember']],value='gender',inline=True)]),
 	
 	dbc.FormGroup([
 	
@@ -220,19 +227,51 @@ tab1_content = dbc.Card(
 		html.Hr(),
 
 	dbc.Row([
-	dbc.Col(bar_chart)])]),  className="mt-3") #Card wrapped in a Col, the other way round is also
+	dbc.Col(bar_chart)])]), className="mt-3") #Card wrapped in a Col, the other way round is also
 
+#wrapping in Div is sometime better than wrapping in Card.
+model_2=html.Div([
+	html.Hr(),
+	html.P("Train and Visualize yout custom Regression Model to predict Employee salary",style={'color': '#008B8B', 'fontSize': 30,'font-weight': 'bold','text-align': 'center'}),
+	
+	
+	dbc.Row([
+		dbc.Col([
+	dbc.FormGroup([
+	dbc.Label("Choose the first feature",className="column-colors"),
+	dbc.RadioItems(id="feature-1",options=[{'value':col,'label':col}
+		for col in svm_regression_X],value='age')])]),
 
+	dbc.Col([
+	dbc.FormGroup([
+	dbc.Label("Choose the second feature",className="column-colors"),
+	dbc.RadioItems(id="feature-2",options=[{'value':col,'label':col}
+		for col in svm_regression_X],value='age')])]),
+	]),
+	html.Hr(),
+	dbc.FormGroup([
+		#dbc.Label("CreditScore: Range is from 300-1000"),
+		html.P("Select the number of Features to Train your model"),
+		#dbc.Input(id="credit-input",type="number", min=300, max=1000, step=1,valid=True,placeholder="Enter a creditScore")]),
+		dcc.Slider(id='model-input', min=30,max=300,step=5,marks={100:'100',200:"300"},value=50)]),
+	html.Hr(),
+	dbc.FormGroup([
+	dbc.Label("Please Select a Model for the Regression"),	
+	dbc.RadioItems(id="model_2_regressor",options=[{'value':col,'label':col}
+		for col in ['Linear Regression','Decision Tree Regression','Support Vector Machine Regression','KNN Regression']],value='LinearRegression')]),
+	
+	dcc.Graph(id="svm-graph")])
 		
 tab2_content = dbc.Card(
+	
 	dbc.CardBody(
 		[
-		html.P("Ridge Classifier",style={'color': '#008B8B', 'fontSize': 30,'font-weight': 'bold','text-align': 'center'}),
+		html.P("Ridge Classification for classifying whether the Employee will stay / leave.",style={'color': '#008B8B', 'fontSize': 30,'font-weight': 'bold','text-align': 'center'}),
 		dbc.Row([dbc.Col(controls),
-			dbc.Col(dbc.Card([
-				dcc.Graph(id="coef-figure"),
+			dbc.Card([
+				dcc.Graph(id="coef-figure") # card can be wrapped in a column, no difference.
 
-		]))],align="center"),
+		])],align="center"),dbc.Row([dbc.Col(model_2)],align="center") # wrap al element in a col in a Row.
 			
 		]),className="mt-3")
 
@@ -291,7 +330,7 @@ def ridge_classification(predict_button,cred_score,age,tenure,
 		list_[1]=age
 		list_[2]=tenure
 		list_[3]=balance
-		list_[5]=credcard[0]
+		#list_[5]=credcard[0]
 		list_[7]=salary
 
 		if geography=="France":
@@ -315,9 +354,6 @@ def ridge_classification(predict_button,cred_score,age,tenure,
 
 		result=model.predict(list_.reshape(1,-1))
 			
-		# a=np.array(prediction_list).reshape((1,-1))
-		# result=model.predict(a)
-
 	coef_fig = px.bar(
 		y=sorted_coefs,
 		x=sorted_x,
@@ -335,19 +371,77 @@ def ridge_classification(predict_button,cred_score,age,tenure,
 
 	return coef_fig, status
 
+# @app.callback(
+# 	Output("model_2_dropdown","value"),
+# 	Input("model_2_dropdown","value"))
 
-def decision_tree_classification():
+# def regression_dropdown(values):
+# 	if len(values)>2:
+# 		dbc.Toast([html.P("Please Select no more than 2 columns",className="mb-0")])
+# 		return values[:2]
+# 	else:
+# 		return values
 
-	x_train,x_test,y_train,y_test=model_prep(data)
+@app.callback(
 
-	model=DecisionTreeClassifier(max_depth=3)
-	model.fit(x_train,y_train)
+	Output("svm-graph","figure"),
+	[
+	Input("feature-1","value"),
+	Input("feature-2","value"),
+	Input("model_2_regressor","value"),
+	Input("model-input","value")
+	])
 
+def regression_plot(feature_1,feature_2,regression_model,n_rows):
+
+	margin=0
+	feature_list=['creditscore','balance']
+
+	if feature_1 in feature_list and feature_2 in feature_list:
+		step_size=50
+
+	step_size=10
+	data_filter=data[data.balance!=0]
+	data_filter=data_filter.iloc[:500,:]
+	X=data_filter.loc[:n_rows,[feature_1,feature_2]]	
+	y=svm_regression_y[:X.shape[0]]
+
+	if regression_model=='Linear Regression':
+		model=LinearRegression()
+	
+	elif regression_model=='Decision Tree Regression':
+		model=DecisionTreeRegressor()
+	elif regression_model=='Support Vector Machine Regression':
+		model=SVR()
+	else:
+		model=KNeighborsRegressor()
+
+	model.fit(X,y)
+
+	col1=X.iloc[:,0]
+	col2=X.iloc[:,1]
+
+	xmin,xmax=col1.min()-margin, col1.max()+margin
+	ymin,ymax=col2.min()-margin, col2.max()+margin
+
+	x_range=np.arange(xmin,xmax,step_size)
+	y_range=np.arange(ymin,ymax,step_size)
+	
+	#understand meshgrid.
+	xx,yy=np.meshgrid(x_range,y_range)
+
+	pred=model.predict(np.c_[xx.ravel(),yy.ravel()])
+	pred=pred.reshape(xx.shape)
+
+	fig=px.scatter_3d(data_filter,x=col1.name,y=col2.name,z="estimatedsalary")
+	#fig.update_traces(marker=dict(size=5))
+	fig.add_trace(go.Surface(x=x_range,y=y_range,z=pred,name="surface"))
+	
+	return fig
 
 @app.callback(
 	Output('histogram','figure'),
-	Input('hist-dropdown-items','value')
-)
+	Input('hist-dropdown-items','value'))
 
 def histogram(colname):
 
@@ -356,7 +450,7 @@ def histogram(colname):
 		opacity=0.85))
 	fig.add_trace(go.Histogram(x=remain[colname],histnorm='percent',name='Remaining Customers',
 		opacity=0.85))
-	#https://plotly.com/python/reference/layout/
+	#https://plotly.com/python/reference/layout/.
 	fig.update_layout(title=dict(text=f"{colname.upper()} distribution according to customers",font_family="Balto"),
 		xaxis=dict(title=colname,ticklen=10,gridwidth=3),yaxis=dict(title="percent",ticklen=10,gridwidth=3))
 
@@ -379,7 +473,6 @@ def box_plot(x,y,dataset=data):
 	fig=px.box(dataset,x=x,y=y)
 
 	return fig  
-
 
 if __name__ == "__main__":
 
