@@ -96,6 +96,8 @@ svm_regression_y=data['estimatedsalary']
 
 
 app=dash.Dash(__name__,external_stylesheets=[dbc.themes.BOOTSTRAP])
+server=app.server
+
 
 #each div has its own dropdown and graph. Later, a more effective method may be found.
 popover_content=[dbc.PopoverHeader("Make a Ridge Classifier prediction based on your selected parameters.")]
@@ -251,12 +253,12 @@ model_2=html.Div([
 	html.Hr(),
 	dbc.FormGroup([
 		#dbc.Label("CreditScore: Range is from 300-1000"),
-		html.P("Select the number of Features to Train your model"),
+		html.P("Select the number of observations for trainin gyour model",className="column-colors"),
 		#dbc.Input(id="credit-input",type="number", min=300, max=1000, step=1,valid=True,placeholder="Enter a creditScore")]),
 		dcc.Slider(id='model-input', min=30,max=300,step=5,marks={100:'100',200:"300"},value=50)]),
 	html.Hr(),
 	dbc.FormGroup([
-	dbc.Label("Please Select a Model for the Regression"),	
+	dbc.Label("Please Select a Model for the Regression",className="column-colors"),	
 	dbc.RadioItems(id="model_2_regressor",options=[{'value':col,'label':col}
 		for col in ['Linear Regression','Decision Tree Regression','Support Vector Machine Regression','KNN Regression']],value='LinearRegression')]),
 	
