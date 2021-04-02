@@ -1,3 +1,14 @@
-pandas==1.0.5
-dash==1.19.0
+pandas
+numpy
+dash
+dash-core-components
+dash-html-components
+dash-bootstrap-components
+sklearn
+plotly
 gunicorn==20.1.0
+
+
+
+
+

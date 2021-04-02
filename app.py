@@ -1,17 +1,14 @@
 ### Make your functions (for visualizations, models) then decorate with inputs and outputs.
 
 
-
 ### Construct independent elements.
 ### Organize them into tabs, then tabs into layouts. or strictly into layouts.
 ### This approach allows to easiliy take out and modify graphs, and manually inserting
 ### each plot into the layout makes the complicated.
 
+
 import pandas as pd 
 import numpy as np 
-import matplotlib.pyplot as plt 
-import seaborn as sns 
-import os 
 import sys 
 import dash
 import dash_core_components as dcc
@@ -21,25 +18,14 @@ import warnings
 import plotly.express as px 
 import plotly.graph_objs as go
 from dash.dependencies import Input, Output, State
-from sqlalchemy import create_engine
-from snowflake.sqlalchemy import URL
 from sklearn.linear_model import Ridge, RidgeClassifier
 from sklearn.model_selection import train_test_split
 from sklearn import metrics
-from utils import *
-from sklearn.tree import DecisionTreeClassifier, plot_tree, export_graphviz
-import pydotplus
-import graphviz
-from IPython.display import Image
-from io import StringIO
 from sklearn.svm import SVR
 from sklearn.tree import DecisionTreeRegressor
 from sklearn.linear_model import LinearRegression
 from sklearn.neighbors import KNeighborsRegressor
-
-
-
-print()
+from utils import *
 
 warnings.filterwarnings("ignore")
 
@@ -68,7 +54,6 @@ categorial_cols=[col for col in categorical_cols if col not in target_col]
 numerical_cols=[col for col in data.columns if col not in categorical_cols+target_col]
 
 
-
 #Statistical Properties.
 data[data.columns[:10]].describe()
 
@@ -76,27 +61,23 @@ data[data.columns[:10]].median()
 
 percentage_labels=data[target_col[0]].value_counts(normalize=True)*100
 	
-sns.set_theme(style="ticks",font_scale=1)
-ax=sns.countplot(data.exited)
-ax.set_title("Distribution")
-ax.set_xlabel("Number of People who stayed /exited")
-ax.set_ylabel("Values")
+# sns.set_theme(style="ticks",font_scale=1)
+# ax=sns.countplot(data.exited)
+# ax.set_title("Distribution")
+# ax.set_xlabel("Number of People who stayed /exited")
+# ax.set_ylabel("Values")
 
-total_length=len(data['exited'])
-for p in ax.patches:
+# total_length=len(data['exited'])
+# for p in ax.patches:
 	
-	height=p.get_height()
-	ax.text(p.get_x()+p.get_width()/2., height+2,f"{100*height/total_length}")
-
-#plt.show()
+# 	height=p.get_height()
+# 	ax.text(p.get_x()+p.get_width()/2., height+2,f"{100*height/total_length}")
 
 ### Three main steps.
 ### Make the chart, with a callback, embed in an html form.
 
 svm_regression_X=data[['creditscore', 'age', 'balance']]
 svm_regression_y=data['estimatedsalary']
-
-
 
 app=dash.Dash(__name__,external_stylesheets=[dbc.themes.BOOTSTRAP])
 server=app.server
@@ -169,7 +150,6 @@ controls=dbc.Card([
 table=html.Div([
 	dbc.Table.from_dataframe(data.iloc[:5,:],striped=True,bordered=True,hover=True)
 	],className="subheader-title")
-
 
 
 dropdown_items=[dbc.DropdownMenuItem(col) for col in numerical_cols]
@@ -271,7 +251,7 @@ tab2_content = dbc.Card(
 	
 	dbc.CardBody(
 		[
-		html.P("Ridge Classification for classifying whether the Employee will stay / leave.",style={'color': '#008B8B', 'fontSize': 30,'font-weight': 'bold','text-align': 'center'}),
+		html.P("Ridge Classification for classifying whether the Employee will leave or stay",style={'color': '#008B8B', 'fontSize': 30,'font-weight': 'bold','text-align': 'center'}),
 		dbc.Row([dbc.Col(controls),
 			dbc.Card([
 				dcc.Graph(id="coef-figure") # card can be wrapped in a column, no difference.
@@ -295,6 +275,7 @@ app.layout=dbc.Container([
 ### the callback input goes into the function. Every chart needs its callback.
 
 #State does not trigger callback, while Input does, so changing age, cred-score
+
 @app.callback(
 	[Output("coef-figure",component_property="figure"),
 	Output("predicted-status",component_property="value")],
@@ -379,13 +360,6 @@ def ridge_classification(predict_button,cred_score,age,tenure,
 # @app.callback(
 # 	Output("model_2_dropdown","value"),
 # 	Input("model_2_dropdown","value"))
-
-# def regression_dropdown(values):
-# 	if len(values)>2:
-# 		dbc.Toast([html.P("Please Select no more than 2 columns",className="mb-0")])
-# 		return values[:2]
-# 	else:
-# 		return values
 
 @app.callback(
 
